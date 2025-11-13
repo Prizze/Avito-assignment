@@ -1,0 +1,9 @@
+# build
+/bin/app
+
+# generated
+internal/api/api.gen.go
+**/mocks/
+
+#env
+.env
