@@ -61,6 +61,13 @@ const (
 		merged_at = $2
 		WHERE id = $3;
 	`
+
+	deleteOldReviewer = `
+		DELETE FROM assigned_pr WHERE pr_id = $1 AND reviewer_id = $2;
+	`
+	insertNewReviewer = `
+		INSERT INTO assigned_pr (pr_id, reviewer_id) VALUES($1, $2);
+	`
 )
 
 func (r *PullRequestRepository) ExistsById(ctx context.Context, id int) (bool, error) {
@@ -166,4 +173,30 @@ func (r *PullRequestRepository) UpdateStatus(ctx context.Context, pr *domain.Pul
 	}
 
 	return pr, nil
+}
+
+func (r *PullRequestRepository) UpdateAssignedReviewers(
+	ctx context.Context, prID int, oldReviewerID int, newReviewerID int,
+) error {
+	tx, err := r.pool.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to begin tx: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	_, err = tx.Exec(ctx, deleteOldReviewer, prID, oldReviewerID)
+	if err != nil {
+		return fmt.Errorf("failed to delete old reviewer: %w", err)
+	}
+
+	_, err = tx.Exec(ctx, insertNewReviewer, prID, newReviewerID)
+	if err != nil {
+		return fmt.Errorf("failed to insert new reviewer: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("failed to commit: %w", err)
+	}
+
+	return nil
 }

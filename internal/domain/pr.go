@@ -48,6 +48,11 @@ var MapDomainStatusToAPI = map[PullRequestStatus]api.PullRequestStatus{
 	PRStatusMerged: api.PullRequestStatusMERGED,
 }
 
+var MapStringToPullRequestStatusShort = map[PullRequestStatus]api.PullRequestShortStatus{
+	PRStatusOpen:   api.PullRequestShortStatusOPEN,
+	PRStatusMerged: api.PullRequestShortStatusMERGED,
+}
+
 var MapStringToPullRequestStatus = map[string]PullRequestStatus{
 	"OPEN":   PRStatusOpen,
 	"MERGED": PRStatusMerged,
@@ -70,5 +75,43 @@ func DomainPRToAPI(pr *PullRequest) api.PullRequest {
 		Status:            MapDomainStatusToAPI[pr.Status],
 		PullRequestName:   pr.Name,
 		AssignedReviewers: reviewers,
+	}
+}
+
+func DomainPRToAPIShort(pr *PullRequest) api.PullRequestShort {
+	return api.PullRequestShort{
+		PullRequestId:   fmt.Sprintf("pr-%d", pr.ID),
+		PullRequestName: pr.Name,
+		AuthorId:        fmt.Sprintf("u%d", pr.AuthorID),
+		Status:          MapStringToPullRequestStatusShort[pr.Status],
+	}
+}
+
+func DomainPRsToAPIShort(prs []PullRequest) []api.PullRequestShort {
+	prsAPI := make([]api.PullRequestShort, 0, len(prs))
+	for _, pr := range prs {
+		prAPI := DomainPRToAPIShort(&pr)
+		prsAPI = append(prsAPI, prAPI)
+	}
+
+	return prsAPI
+}
+
+type ReassingReviewer struct {
+	PullRequestID int
+	UserID        int
+}
+
+type ReassignResponse struct {
+	PullRequest api.PullRequest `json:"pr"`
+	ReplacedBy  string          `json:"replaced_by"`
+}
+
+func APIReassignToDomain(ras api.PostPullRequestReassignJSONRequestBody) *ReassingReviewer {
+	prID, _ := strconv.Atoi(ras.PullRequestId[3:])
+	userID, _ := strconv.Atoi(ras.OldUserId[1:])
+	return &ReassingReviewer{
+		PullRequestID: prID,
+		UserID:        userID,
 	}
 }

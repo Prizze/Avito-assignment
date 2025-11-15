@@ -3,6 +3,7 @@ package pullrequest
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"pr-reviewer/internal/api"
@@ -77,7 +78,39 @@ func (h *PRHandler) PostPullRequestMerge(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *PRHandler) PostPullRequestReassign(w http.ResponseWriter, r *http.Request) {
+	var req api.PostPullRequestReassignJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.SendErrorResponse(w, api.BADREQUEST, http.StatusBadRequest)
+		return
+	}
 
+	if err := validation.ValidatePRId(req.PullRequestId); err != nil {
+		response.SendErrorResponse(w, api.BADREQUEST, http.StatusBadRequest)
+		return
+	}
+
+	if err := validation.ValidateUserId(req.OldUserId); err != nil {
+		response.SendErrorResponse(w, api.BADREQUEST, http.StatusBadRequest)
+		return
+	}
+
+	reas := domain.APIReassignToDomain(req)
+
+	reassignedPR, replacedBy, err := h.uc.ReassignReviewer(r.Context(), reas)
+	if err != nil {
+		code, status := h.mapDomainErrorToAPI(err)
+		response.SendErrorResponse(w, code, status)
+		return
+	}
+
+	reasAPI := domain.DomainPRToAPI(reassignedPR)
+	userIdAPI := fmt.Sprintf("u%d", replacedBy)
+	resp := domain.ReassignResponse{
+		PullRequest: reasAPI,
+		ReplacedBy:  userIdAPI,
+	}
+
+	response.SendResponse(w, http.StatusOK, resp)
 }
 
 func (h *PRHandler) mapDomainErrorToAPI(err error) (api.ErrorResponseErrorCode, int) {
@@ -89,6 +122,12 @@ func (h *PRHandler) mapDomainErrorToAPI(err error) (api.ErrorResponseErrorCode, 
 		return api.PREXISTS, http.StatusConflict
 	case errors.Is(err, domain.ErrPullRequestNotFound):
 		return api.NOTFOUND, http.StatusNotFound
+	case errors.Is(err, domain.ErrNoAvailableCandidats):
+		return api.NOCANDIDATE, http.StatusConflict
+	case errors.Is(err, domain.ErrPullRequestIsMerged):
+		return api.PRMERGED, http.StatusConflict
+	case errors.Is(err, domain.ErrNotAssigned):
+		return api.NOTASSIGNED, http.StatusConflict
 	default:
 		return api.INTERNAL, http.StatusInternalServerError
 	}

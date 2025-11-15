@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"pr-reviewer/internal/domain"
 	user "pr-reviewer/internal/usecase/User"
+	"slices"
 	"time"
 )
 
@@ -22,7 +23,7 @@ func NewPullRequestUsecase(repo PullRequestRepo, userRepo user.UserRepo) *PullRe
 }
 
 func (uc *PullRequestUsecase) CreatePullRequest(ctx context.Context, cr *domain.CreatePullRequest) (*domain.PullRequest, error) {
-	if err := uc.checkCreatePRConditions(ctx, cr); err != nil {
+	if err := uc.checkCreatePRConditions(ctx, cr.AuthorId, cr.PullRequestId); err != nil {
 		return nil, err
 	}
 
@@ -89,8 +90,69 @@ func (uc *PullRequestUsecase) MergePullRequest(ctx context.Context, prID int) (*
 	return updatedPR, nil
 }
 
-func (uc *PullRequestUsecase) checkCreatePRConditions(ctx context.Context, cr *domain.CreatePullRequest) error {
-	authorExists, err := uc.userRepo.ExistsById(ctx, cr.AuthorId)
+func (uc *PullRequestUsecase) ReassignReviewer(ctx context.Context, reas *domain.ReassingReviewer) (*domain.PullRequest, int, error) {
+	userExists, err := uc.userRepo.ExistsById(ctx, reas.UserID)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to check author existence: %w", err)
+	}
+	if !userExists {
+		return nil, 0, domain.ErrUserNotFound
+	}
+
+	prExists, err := uc.checkPRIDExists(ctx, reas.PullRequestID)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to check PR existance: %w", err)
+	}
+	if !prExists {
+		return nil, 0, domain.ErrPullRequestNotFound
+	}
+
+	pr, err := uc.repo.GetById(ctx, reas.PullRequestID)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to get pull_request: %w", err)
+	}
+
+	if pr.Status == domain.PRStatusMerged {
+		return nil, 0, domain.ErrPullRequestIsMerged
+	}
+
+	idx := slices.IndexFunc(pr.AssignedReviewers, func(id int) bool {
+		return id == reas.UserID
+	})
+	if idx == -1 {
+		return nil, 0, domain.ErrNotAssigned
+	}
+
+	candidates, err := uc.repo.GetActiveTeamMembersExceptAuthor(ctx, pr.AuthorID)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to get team members: %w", err)
+	}
+
+	filteredCandidates := make([]domain.User, 0)
+	for _, u := range candidates {
+		if !slices.Contains(pr.AssignedReviewers, u.ID) {
+			filteredCandidates = append(filteredCandidates, u)
+		}
+	}
+
+	if len(filteredCandidates) == 0 {
+		return nil, 0, domain.ErrNoAvailableCandidats
+	}
+
+	newReviewer := filteredCandidates[rand.Intn(len(filteredCandidates))]
+
+	pr.AssignedReviewers[idx] = newReviewer.ID
+
+	err = uc.repo.UpdateAssignedReviewers(ctx, pr.ID, reas.UserID, newReviewer.ID)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to update assigned reviewers: %w", err)
+	}
+
+	return pr, newReviewer.ID, nil
+}
+
+func (uc *PullRequestUsecase) checkCreatePRConditions(ctx context.Context, uid int, prid int) error {
+	authorExists, err := uc.userRepo.ExistsById(ctx, uid)
 	if err != nil {
 		return fmt.Errorf("failed to check author existence: %w", err)
 	}
@@ -98,7 +160,7 @@ func (uc *PullRequestUsecase) checkCreatePRConditions(ctx context.Context, cr *d
 		return domain.ErrUserNotFound
 	}
 
-	prExists, err := uc.checkPRIDExists(ctx, cr.PullRequestId)
+	prExists, err := uc.checkPRIDExists(ctx, prid)
 	if err != nil {
 		return fmt.Errorf("failed to check PR existance: %w", err)
 	}

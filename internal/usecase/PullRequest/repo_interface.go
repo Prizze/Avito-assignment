@@ -11,4 +11,5 @@ type PullRequestRepo interface {
 	Create(ctx context.Context, pr *domain.PullRequest) (*domain.PullRequest, error)
 	GetById(ctx context.Context, id int) (*domain.PullRequest, error)
 	UpdateStatus(ctx context.Context, pr *domain.PullRequest) (*domain.PullRequest, error)
+	UpdateAssignedReviewers(ctx context.Context, prID int, oldReviewerID int, newReviewerID int) error
 }
