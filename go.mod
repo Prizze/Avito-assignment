@@ -3,6 +3,7 @@ module pr-reviewer
 go 1.25.4
 
 require (
+	github.com/golang/mock v1.6.0
 	github.com/gorilla/mux v1.8.1
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/oapi-codegen/runtime v1.1.2

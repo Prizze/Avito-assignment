@@ -38,3 +38,7 @@ migrate-version:
 migrate-create:
 	@read -p "Migration name: " name; \
 	migrate create -seq -ext sql -dir $(MIGRATIONS_DIR) $$name
+
+# --- Генерация моков ---
+generate:
+	go generate ./...

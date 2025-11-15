@@ -5,6 +5,8 @@ import (
 	"pr-reviewer/internal/domain"
 )
 
+//go:generate mockgen -source repo_interface.go -destination=mocks/mock_pullrequest_repo.go -package=mocks
+
 type PullRequestRepo interface {
 	ExistsById(ctx context.Context, id int) (bool, error)
 	GetActiveTeamMembersExceptAuthor(ctx context.Context, authorId int) ([]domain.User, error)
