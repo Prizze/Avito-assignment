@@ -3,11 +3,13 @@ package user
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"pr-reviewer/internal/api"
 	"pr-reviewer/internal/domain"
 	"pr-reviewer/internal/pkg/response"
 	"pr-reviewer/internal/pkg/validation"
+	"strconv"
 )
 
 type UserHandler struct {
@@ -21,7 +23,24 @@ func NewUserHandler(uc userUC) *UserHandler {
 }
 
 func (h *UserHandler) GetUsersGetReview(w http.ResponseWriter, r *http.Request, params api.GetUsersGetReviewParams) {
+	userIdAPI := params.UserId
+	if err := validation.ValidateUserId(userIdAPI); err != nil {
+		response.SendErrorResponse(w, api.BADREQUEST, http.StatusBadRequest)
+		return
+	}
 
+	userID, _ := strconv.Atoi(userIdAPI[1:])
+	userPRs, err := h.uc.GetUserPullRequests(r.Context(), userID)
+	if err != nil {
+		code, status := h.mapDomainErrorToAPI(err)
+		response.SendErrorResponse(w, code, status)
+		return
+	}
+
+	userPRsAPI := domain.DomainPRsToAPIShort(userPRs)
+	resp := domain.UserReviews{UserID: userIdAPI, PullRequests: userPRsAPI}
+
+	response.SendResponse(w, http.StatusOK, resp)
 }
 
 func (h *UserHandler) PostUsersSetIsActive(w http.ResponseWriter, r *http.Request) {
@@ -52,6 +71,7 @@ func (h *UserHandler) PostUsersSetIsActive(w http.ResponseWriter, r *http.Reques
 }
 
 func (h *UserHandler) mapDomainErrorToAPI(err error) (api.ErrorResponseErrorCode, int) {
+	log.Println(err)
 	switch {
 	case errors.Is(err, domain.ErrUserNotFound):
 		return api.NOTFOUND, http.StatusNotFound

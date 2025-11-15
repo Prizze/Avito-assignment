@@ -34,6 +34,24 @@ func (uc *UserUsecase) SetUserIsActive(ctx context.Context, set *domain.SetUserI
 
 }
 
+func (uc *UserUsecase) GetUserPullRequests(ctx context.Context, userID int) ([]domain.PullRequest, error) {
+	exists, err := uc.checkUserIDExists(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	if !exists {
+		return nil, domain.ErrUserNotFound
+	}
+
+	userPRs, err := uc.repo.GetUserPullRequests(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user pull_requests: %w", err)
+	}
+
+	return userPRs, nil
+}
+
 func (uc *UserUsecase) checkUserIDExists(ctx context.Context, id int) (bool, error) {
 	exists, err := uc.repo.ExistsById(ctx, id)
 	if err != nil {

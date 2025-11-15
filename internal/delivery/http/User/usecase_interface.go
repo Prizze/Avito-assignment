@@ -7,4 +7,5 @@ import (
 
 type userUC interface {
 	SetUserIsActive(ctx context.Context, set *domain.SetUserIsActive) (*domain.User, error)
+	GetUserPullRequests(ctx context.Context, userID int) ([]domain.PullRequest, error)
 }

@@ -8,4 +8,5 @@ import (
 type UserRepo interface {
 	ExistsById(ctx context.Context, id int) (bool, error)
 	UpdateIsActive(ctx context.Context, set *domain.SetUserIsActive) (*domain.User, error)
+	GetUserPullRequests(ctx context.Context, userID int) ([]domain.PullRequest, error)
 }

@@ -39,3 +39,8 @@ func DomainUserToAPI(u *User) api.User {
 		Username: u.Username,
 	}
 }
+
+type UserReviews struct {
+	UserID       string                 `json:"user_id"`
+	PullRequests []api.PullRequestShort `json:"pull_requests"`
+}
