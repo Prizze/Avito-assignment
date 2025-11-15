@@ -4,13 +4,15 @@ import (
 	"context"
 	"fmt"
 	"pr-reviewer/internal/domain"
+	"pr-reviewer/internal/pkg/logger"
 )
 
 type UserUsecase struct {
-	repo UserRepo
+	repo   UserRepo
+	logger logger.Logger
 }
 
-func NewUserUsecase(repo UserRepo) *UserUsecase {
+func NewUserUsecase(repo UserRepo, logger logger.Logger) *UserUsecase {
 	return &UserUsecase{
 		repo: repo,
 	}
@@ -19,6 +21,7 @@ func NewUserUsecase(repo UserRepo) *UserUsecase {
 func (uc *UserUsecase) SetUserIsActive(ctx context.Context, set *domain.SetUserIsActive) (*domain.User, error) {
 	exists, err := uc.checkUserIDExists(ctx, set.ID)
 	if err != nil {
+		uc.logger.WithFields(logger.LoggerFields{"err": err.Error(), "userID": set.ID, "isActive": set.IsActive}).Error("User usecase: check user_id failed")
 		return nil, err
 	}
 
@@ -28,7 +31,8 @@ func (uc *UserUsecase) SetUserIsActive(ctx context.Context, set *domain.SetUserI
 
 	updatedUser, err := uc.repo.UpdateIsActive(ctx, set)
 	if err != nil {
-		return nil, fmt.Errorf("failed to update_is_activeL %w", err)
+		uc.logger.WithFields(logger.LoggerFields{"err": err.Error(), "userID": set.ID, "isActive": set.IsActive}).Error("User usecase: update is_active failed")
+		return nil, fmt.Errorf("failed to update_is_active %w", err)
 	}
 	return updatedUser, nil
 
@@ -37,6 +41,7 @@ func (uc *UserUsecase) SetUserIsActive(ctx context.Context, set *domain.SetUserI
 func (uc *UserUsecase) GetUserPullRequests(ctx context.Context, userID int) ([]domain.PullRequest, error) {
 	exists, err := uc.checkUserIDExists(ctx, userID)
 	if err != nil {
+		uc.logger.WithFields(logger.LoggerFields{"err": err.Error(), "userID": userID}).Error("User usecase: check user_id failed")
 		return nil, err
 	}
 
@@ -46,6 +51,7 @@ func (uc *UserUsecase) GetUserPullRequests(ctx context.Context, userID int) ([]d
 
 	userPRs, err := uc.repo.GetUserPullRequests(ctx, userID)
 	if err != nil {
+		uc.logger.WithFields(logger.LoggerFields{"err": err.Error(), "userID": userID}).Error("User usecase: get user prs failed")
 		return nil, fmt.Errorf("failed to get user pull_requests: %w", err)
 	}
 

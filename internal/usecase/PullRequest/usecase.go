@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"pr-reviewer/internal/domain"
+	"pr-reviewer/internal/pkg/logger"
 	user "pr-reviewer/internal/usecase/User"
 	"slices"
 	"time"
@@ -13,9 +14,10 @@ import (
 type PullRequestUsecase struct {
 	repo     PullRequestRepo
 	userRepo user.UserRepo
+	logger   logger.Logger
 }
 
-func NewPullRequestUsecase(repo PullRequestRepo, userRepo user.UserRepo) *PullRequestUsecase {
+func NewPullRequestUsecase(repo PullRequestRepo, userRepo user.UserRepo, logger logger.Logger) *PullRequestUsecase {
 	return &PullRequestUsecase{
 		repo:     repo,
 		userRepo: userRepo,
@@ -38,6 +40,7 @@ func (uc *PullRequestUsecase) CreatePullRequest(ctx context.Context, cr *domain.
 
 	teamMembers, err := uc.repo.GetActiveTeamMembersExceptAuthor(ctx, cr.AuthorId)
 	if err != nil {
+		uc.logger.WithFields(logger.LoggerFields{"err": err.Error(), "authorID": cr.AuthorId}).Error("PR usecase: failed to get active members")
 		return nil, fmt.Errorf("failed to get team members: %w", err)
 	}
 
@@ -54,6 +57,7 @@ func (uc *PullRequestUsecase) CreatePullRequest(ctx context.Context, cr *domain.
 
 	createdPR, err := uc.repo.Create(ctx, pr)
 	if err != nil {
+		uc.logger.WithFields(logger.LoggerFields{"err": err.Error(), "prID": pr.ID}).Error("PR usecase: failed to create pull_request")
 		return nil, fmt.Errorf("failed to create PR: %w", err)
 	}
 
@@ -71,6 +75,7 @@ func (uc *PullRequestUsecase) MergePullRequest(ctx context.Context, prID int) (*
 
 	pr, err := uc.repo.GetById(ctx, prID)
 	if err != nil {
+		uc.logger.WithFields(logger.LoggerFields{"err": err.Error(), "prID": prID}).Error("PR usecase: failed to get pull_request by id")
 		return nil, fmt.Errorf("failed to get PR by id: %w", err)
 	}
 
@@ -84,6 +89,7 @@ func (uc *PullRequestUsecase) MergePullRequest(ctx context.Context, prID int) (*
 
 	updatedPR, err := uc.repo.UpdateStatus(ctx, pr)
 	if err != nil {
+		uc.logger.WithFields(logger.LoggerFields{"err": err.Error(), "prID": pr.ID, "status": pr.Status}).Error("PR usecase: failed to update status")
 		return nil, fmt.Errorf("failed to update PR status: %w", err)
 	}
 
@@ -93,6 +99,7 @@ func (uc *PullRequestUsecase) MergePullRequest(ctx context.Context, prID int) (*
 func (uc *PullRequestUsecase) ReassignReviewer(ctx context.Context, reas *domain.ReassingReviewer) (*domain.PullRequest, int, error) {
 	userExists, err := uc.userRepo.ExistsById(ctx, reas.UserID)
 	if err != nil {
+		uc.logger.WithFields(logger.LoggerFields{"err": err.Error(), "userID": reas.UserID}).Error("PR usecase: failed to check user existence")
 		return nil, 0, fmt.Errorf("failed to check author existence: %w", err)
 	}
 	if !userExists {
@@ -109,6 +116,7 @@ func (uc *PullRequestUsecase) ReassignReviewer(ctx context.Context, reas *domain
 
 	pr, err := uc.repo.GetById(ctx, reas.PullRequestID)
 	if err != nil {
+		uc.logger.WithFields(logger.LoggerFields{"err": err.Error(), "prID": reas.PullRequestID}).Error("PR usecase: failed to get pull_request by id")
 		return nil, 0, fmt.Errorf("failed to get pull_request: %w", err)
 	}
 
@@ -125,6 +133,7 @@ func (uc *PullRequestUsecase) ReassignReviewer(ctx context.Context, reas *domain
 
 	candidates, err := uc.repo.GetActiveTeamMembersExceptAuthor(ctx, pr.AuthorID)
 	if err != nil {
+		uc.logger.WithFields(logger.LoggerFields{"err": err.Error(), "authorID": pr.AuthorID}).Error("PR usecase: failed to get active members")
 		return nil, 0, fmt.Errorf("failed to get team members: %w", err)
 	}
 
@@ -145,6 +154,9 @@ func (uc *PullRequestUsecase) ReassignReviewer(ctx context.Context, reas *domain
 
 	err = uc.repo.UpdateAssignedReviewers(ctx, pr.ID, reas.UserID, newReviewer.ID)
 	if err != nil {
+		uc.logger.WithFields(logger.LoggerFields{
+			"err": err.Error(), "prID": pr.ID, "old_reviewer": reas.UserID, "new_reviewer": newReviewer.ID}).
+			Error("PR usecase: failed to update assigned reviewers")
 		return nil, 0, fmt.Errorf("failed to update assigned reviewers: %w", err)
 	}
 
@@ -154,6 +166,7 @@ func (uc *PullRequestUsecase) ReassignReviewer(ctx context.Context, reas *domain
 func (uc *PullRequestUsecase) checkCreatePRConditions(ctx context.Context, uid int, prid int) error {
 	authorExists, err := uc.userRepo.ExistsById(ctx, uid)
 	if err != nil {
+		uc.logger.WithFields(logger.LoggerFields{"err": err.Error(), "userID": uid}).Error("PR usecase: failed to check user existence")
 		return fmt.Errorf("failed to check author existence: %w", err)
 	}
 	if !authorExists {
@@ -173,6 +186,7 @@ func (uc *PullRequestUsecase) checkCreatePRConditions(ctx context.Context, uid i
 func (uc *PullRequestUsecase) checkPRIDExists(ctx context.Context, id int) (bool, error) {
 	exists, err := uc.repo.ExistsById(ctx, id)
 	if err != nil {
+		uc.logger.WithFields(logger.LoggerFields{"err": err.Error(), "prID": id}).Error("PR usecase: failed to check pr existance")
 		return false, fmt.Errorf("failed to check pull_request existance: %w", err)
 	}
 	return exists, nil
