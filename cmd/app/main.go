@@ -6,11 +6,15 @@ import (
 	"pr-reviewer/internal/api"
 	pullrequest "pr-reviewer/internal/delivery/http/PullRequest"
 	teamDelivery "pr-reviewer/internal/delivery/http/Team"
-	user "pr-reviewer/internal/delivery/http/User"
+	userDelivery "pr-reviewer/internal/delivery/http/User"
 	"pr-reviewer/internal/delivery/http/server"
 	"pr-reviewer/internal/pkg/db/postgres"
+	prRepo "pr-reviewer/internal/repository/PullRequest"
 	teamRepo "pr-reviewer/internal/repository/Team"
+	userRepo "pr-reviewer/internal/repository/User"
+	prUC "pr-reviewer/internal/usecase/PullRequest"
 	teamUC "pr-reviewer/internal/usecase/Team"
+	userUC "pr-reviewer/internal/usecase/User"
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
@@ -31,8 +35,13 @@ func main() {
 	teamUC := teamUC.NewTeamUsecase(teamRepo)
 	teamHandler := teamDelivery.NewTeamHandler(teamUC)
 
-	userHandler := user.NewUserHandler()
-	prHandler := pullrequest.NewPRHandler()
+	userRepo := userRepo.NewUserRepository(pool)
+	userUC := userUC.NewUserUsecase(userRepo)
+	userHandler := userDelivery.NewUserHandler(userUC)
+
+	prRepo := prRepo.NewPullRequestRepository(pool)
+	prUC := prUC.NewPullRequestUsecase(prRepo, userRepo)
+	prHandler := pullrequest.NewPRHandler(prUC)
 
 	server := server.NewServer(userHandler, teamHandler, prHandler)
 
