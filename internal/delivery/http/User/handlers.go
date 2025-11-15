@@ -8,7 +8,7 @@ import (
 type UserHandler struct {
 }
 
-func NewAuthHandler() *UserHandler {
+func NewUserHandler() *UserHandler {
 	return &UserHandler{}
 }
 

@@ -8,7 +8,7 @@ import (
 )
 
 func SendResponse(w http.ResponseWriter, statusCode int, data interface{}) {
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 
@@ -31,5 +31,3 @@ func SendErrorResponse(w http.ResponseWriter, code api.ErrorResponseErrorCode, s
 
 	_ = json.NewEncoder(w).Encode(errResp)
 }
-
-

@@ -14,4 +14,6 @@ var Messages = map[api.ErrorResponseErrorCode]string{
 	api.NOTFOUND:    "resource not found",
 	api.PREXISTS:    "PR id already exists",
 	api.PRMERGED:    "cannot reassign on merged PR",
+	api.BADREQUEST:  "invalid body request",
+	api.INTERNAL:    "internal server error",
 }
