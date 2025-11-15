@@ -20,11 +20,12 @@ CREATE TABLE IF NOT EXISTS pr_status (
 
 -- Pull Request
 CREATE TABLE IF NOT EXISTS pull_request (
-    id SERIAL PRIMARY KEY,
+    id INT PRIMARY KEY,
     title TEXT NOT NULL,
     author_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     status_id INTEGER NOT NULL REFERENCES pr_status(id),
-    merged_at TIMESTAMP NULL
+    merged_at TIMESTAMP NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 -- Список назначенных ревьюверов
