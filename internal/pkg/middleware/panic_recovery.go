@@ -1,3 +1,5 @@
+// Package middleware сожержит middlewares
+// panic_recovery.go middleware для отлавливания panic
 package middleware
 
 import (

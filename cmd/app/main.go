@@ -1,3 +1,4 @@
+// Package main main.go точка входа в приложени
 package main
 
 import (
@@ -27,7 +28,10 @@ import (
 )
 
 func init() {
-	godotenv.Load("../../.env")
+	err := godotenv.Load("../../.env")
+	if err != nil {
+		log.Fatalf("failed to load env")
+	}
 }
 
 func main() {
@@ -45,7 +49,7 @@ func main() {
 	defer pool.Close()
 
 	// Team
-	teamRepo := teamRepo.NewTeamRepository(pool)
+	teamRepo := teamRepo.NewTeamRepository(pool, l)
 	teamUC := teamUC.NewTeamUsecase(teamRepo, l)
 	teamHandler := teamDelivery.NewTeamHandler(teamUC)
 
@@ -55,7 +59,7 @@ func main() {
 	userHandler := userDelivery.NewUserHandler(userUC)
 
 	// PullRequest
-	prRepo := prRepo.NewPullRequestRepository(pool)
+	prRepo := prRepo.NewPullRequestRepository(pool, l)
 	prUC := prUC.NewPullRequestUsecase(prRepo, userRepo, l)
 	prHandler := prDelivery.NewPRHandler(prUC)
 
@@ -92,7 +96,8 @@ func main() {
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatalf("server forced to shutdown: %v", err)
+		log.Printf("server forced to shutdown: %v", err)
+		return
 	}
 
 	log.Println("server stopped gracefully")

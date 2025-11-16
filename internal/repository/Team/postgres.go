@@ -4,18 +4,21 @@ import (
 	"context"
 	"fmt"
 	"pr-reviewer/internal/domain"
+	"pr-reviewer/internal/pkg/logger"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type TeamPepository struct {
-	pool *pgxpool.Pool
+	pool   *pgxpool.Pool
+	logger logger.Logger
 }
 
-func NewTeamRepository(pool *pgxpool.Pool) *TeamPepository {
+func NewTeamRepository(pool *pgxpool.Pool, logger logger.Logger) *TeamPepository {
 	return &TeamPepository{
-		pool: pool,
+		pool:   pool,
+		logger: logger,
 	}
 }
 
@@ -64,7 +67,11 @@ func (r *TeamPepository) Create(ctx context.Context, team *domain.Team) (*domain
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin tx: %w", err)
 	}
-	defer tx.Rollback(ctx)
+	defer func() {
+		if err := tx.Rollback(ctx); err != nil && err != pgx.ErrTxClosed {
+			r.logger.WithFields(logger.LoggerFields{"err": err.Error()}).Error("tx rollback failed")
+		}
+	}()
 
 	// Создаем команду
 	var teamID int

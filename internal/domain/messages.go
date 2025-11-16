@@ -1,12 +1,14 @@
+// Package domain messages.go содержит сообщения об ошибке для статуса из api
 package domain
 
 import "pr-reviewer/internal/api"
 
+// Неизвестная ошибка
 const (
 	UnknownError = "Unknown error"
 )
 
-// Сообщения об ошибке, соответствующие ErrorResponseErrorCode
+// Messages Сообщения об ошибке, соответствующие ErrorResponseErrorCode
 var Messages = map[api.ErrorResponseErrorCode]string{
 	api.NOCANDIDATE: "no active replacement candidate in team",
 	api.NOTASSIGNED: "reviewer is not assigned to this PR",

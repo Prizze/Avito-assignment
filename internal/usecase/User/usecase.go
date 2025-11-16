@@ -38,6 +38,7 @@ func (uc *UserUsecase) SetUserIsActive(ctx context.Context, set *domain.SetUserI
 
 }
 
+// GetUserPullRequests Получить PullRequests у конктетного User
 func (uc *UserUsecase) GetUserPullRequests(ctx context.Context, userID int) ([]domain.PullRequest, error) {
 	exists, err := uc.checkUserIDExists(ctx, userID)
 	if err != nil {

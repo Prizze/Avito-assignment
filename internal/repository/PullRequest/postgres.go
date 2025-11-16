@@ -4,18 +4,21 @@ import (
 	"context"
 	"fmt"
 	"pr-reviewer/internal/domain"
+	"pr-reviewer/internal/pkg/logger"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type PullRequestRepository struct {
-	pool *pgxpool.Pool
+	pool   *pgxpool.Pool
+	logger logger.Logger
 }
 
-func NewPullRequestRepository(pool *pgxpool.Pool) *PullRequestRepository {
+func NewPullRequestRepository(pool *pgxpool.Pool, logger logger.Logger) *PullRequestRepository {
 	return &PullRequestRepository{
-		pool: pool,
+		pool:   pool,
+		logger: logger,
 	}
 }
 
@@ -109,7 +112,11 @@ func (r *PullRequestRepository) Create(ctx context.Context, pr *domain.PullReque
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin tx: %w", err)
 	}
-	defer tx.Rollback(ctx)
+	defer func() {
+		if err := tx.Rollback(ctx); err != nil && err != pgx.ErrTxClosed {
+			r.logger.WithFields(logger.LoggerFields{"err": err.Error()}).Error("tx rollback failed")
+		}
+	}()
 
 	var statusID int
 	err = tx.QueryRow(ctx, getStatusID, pr.Status).Scan(&statusID)
@@ -182,7 +189,11 @@ func (r *PullRequestRepository) UpdateAssignedReviewers(
 	if err != nil {
 		return fmt.Errorf("failed to begin tx: %w", err)
 	}
-	defer tx.Rollback(ctx)
+	defer func() {
+		if err := tx.Rollback(ctx); err != nil && err != pgx.ErrTxClosed {
+			r.logger.WithFields(logger.LoggerFields{"err": err.Error()}).Error("tx rollback failed")
+		}
+	}()
 
 	_, err = tx.Exec(ctx, deleteOldReviewer, prID, oldReviewerID)
 	if err != nil {

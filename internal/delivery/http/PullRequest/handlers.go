@@ -1,3 +1,4 @@
+// Package pullrequest содержит handlers для PullRequest
 package pullrequest
 
 import (
@@ -13,6 +14,7 @@ import (
 	"strconv"
 )
 
+// PRHandler Handler для PullRequest
 type PRHandler struct {
 	uc prUC
 }

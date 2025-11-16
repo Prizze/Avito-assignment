@@ -1,7 +1,9 @@
+// Package domain errors.go внутренние ошибки
 package domain
 
 import "errors"
 
+// Ошибки для Team
 var (
 	ErrTeamNameEmpty    = errors.New("team name cannot be empty")
 	ErrInvalidUser      = errors.New("invalid user data")
@@ -10,10 +12,12 @@ var (
 	ErrTeamNotFound     = errors.New("team not found")
 )
 
+// Ошибки для User
 var (
 	ErrUserNotFound = errors.New("user not found")
 )
 
+// Ошибки для PullRequest
 var (
 	ErrInvalidPullRequest   = errors.New("invalid pull_request data")
 	ErrPullRequestExists    = errors.New("pull_request already exists")

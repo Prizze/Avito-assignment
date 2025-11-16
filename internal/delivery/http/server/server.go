@@ -1,3 +1,4 @@
+// Package server server.go композирует handlers для удовлетворения ServerInterface
 package server
 
 import (
