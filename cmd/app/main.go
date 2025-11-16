@@ -13,6 +13,7 @@ import (
 	"pr-reviewer/internal/delivery/http/server"
 	"pr-reviewer/internal/pkg/db/postgres"
 	"pr-reviewer/internal/pkg/logger"
+	"pr-reviewer/internal/pkg/middleware"
 	prRepo "pr-reviewer/internal/repository/PullRequest"
 	teamRepo "pr-reviewer/internal/repository/Team"
 	userRepo "pr-reviewer/internal/repository/User"
@@ -63,7 +64,8 @@ func main() {
 
 	r := mux.NewRouter()
 	h := api.HandlerWithOptions(server, api.GorillaServerOptions{
-		BaseRouter: r,
+		BaseRouter:  r,
+		Middlewares: []api.MiddlewareFunc{middleware.RecoverMiddleware},
 	})
 
 	addr := ":8080"
