@@ -46,13 +46,13 @@ generate:
 # --- Тесты с покрытием ---
 test:
 	go test ./... -coverprofile=coverage.out
-	@echo "\nAverage coverage:"
-	@go tool cover -func=coverage.out \
-		| grep -v 'mock_' \
-		| grep -v 'api' \
-		| grep -v 'main' \
-		| grep -v '^total:' \
-		| awk '{ s+=$$3; n++ } END { if (n > 0) printf("%.1f%%\n", s/n) }'
+	@echo "\nGenerating filtered HTML coverage report..."
+	@grep -v 'mocks/' coverage.out \
+	  | grep -v 'api.gen.go' \
+	  | grep -v 'main.go' \
+	  > coverage_filtered.out
+	@go tool cover -html=coverage_filtered.out -o coverage.html
+	@echo "Open coverage.html in your browser to view coverage details"
 
 # --- Прогон линтера ---
 lint:

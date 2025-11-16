@@ -10,4 +10,5 @@ internal/api/api.gen.go
 
 #test
 coverage.out
+coverage_filtered.out
 coverage.html
