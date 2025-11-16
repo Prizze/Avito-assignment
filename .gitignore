@@ -10,3 +10,4 @@ internal/api/api.gen.go
 
 #test
 coverage.out
+coverage.html
