@@ -3,7 +3,6 @@ package user
 import (
 	"encoding/json"
 	"errors"
-	"log"
 	"net/http"
 	"pr-reviewer/internal/api"
 	"pr-reviewer/internal/domain"
@@ -71,7 +70,6 @@ func (h *UserHandler) PostUsersSetIsActive(w http.ResponseWriter, r *http.Reques
 }
 
 func (h *UserHandler) mapDomainErrorToAPI(err error) (api.ErrorResponseErrorCode, int) {
-	log.Println(err)
 	switch {
 	case errors.Is(err, domain.ErrUserNotFound):
 		return api.NOTFOUND, http.StatusNotFound

@@ -57,3 +57,7 @@ test:
 # --- Прогон линтера ---
 lint:
 	golangci-lint run
+
+# --- Запуск docker-compose ---
+docker-compose:
+	docker-compose -f docker/docker-compose.yml --env-file docker/.example.env up --build

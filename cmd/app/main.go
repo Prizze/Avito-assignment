@@ -24,15 +24,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/joho/godotenv"
 )
-
-func init() {
-	err := godotenv.Load("../../.env")
-	if err != nil {
-		log.Fatalf("failed to load env")
-	}
-}
 
 func main() {
 	// Логгер

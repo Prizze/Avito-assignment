@@ -1,1 +1,61 @@
-# hello
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: postgres
+    env_file:
+      - .example.env
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - default
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: app
+    command: /server
+    ports:
+      - "8080:8080"
+    env_file: .example.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - default
+
+  migrate:
+    image: migrate/migrate:latest
+    container_name: migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../migrations:/migrations
+    env_file:
+      - .example.env
+    command: >
+      -path=/migrations
+      -database=postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=disable
+      up
+    networks:
+      - default
+
+volumes:
+  postgres_data:
+
+networks:
+  default:

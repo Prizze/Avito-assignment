@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"pr-reviewer/internal/api"
 	"pr-reviewer/internal/domain"
@@ -116,7 +115,6 @@ func (h *PRHandler) PostPullRequestReassign(w http.ResponseWriter, r *http.Reque
 }
 
 func (h *PRHandler) mapDomainErrorToAPI(err error) (api.ErrorResponseErrorCode, int) {
-	log.Println(err)
 	switch {
 	case errors.Is(err, domain.ErrUserNotFound):
 		return api.NOTFOUND, http.StatusNotFound
