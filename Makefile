@@ -42,3 +42,14 @@ migrate-create:
 # --- Генерация моков ---
 generate:
 	go generate ./...
+
+# --- Тесты с покрытием ---
+test:
+	go test ./... -coverprofile=coverage.out
+	@echo "\nAverage coverage:"
+	@go tool cover -func=coverage.out \
+		| grep -v 'mock_' \
+		| grep -v 'api' \
+		| grep -v 'main' \
+		| grep -v '^total:' \
+		| awk '{ s+=$$3; n++ } END { if (n > 0) printf("%.1f%%\n", s/n) }'
