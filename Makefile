@@ -53,3 +53,7 @@ test:
 		| grep -v 'main' \
 		| grep -v '^total:' \
 		| awk '{ s+=$$3; n++ } END { if (n > 0) printf("%.1f%%\n", s/n) }'
+
+# --- Прогон линтера ---
+lint:
+	golangci-lint run
